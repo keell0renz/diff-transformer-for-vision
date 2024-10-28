@@ -7,6 +7,7 @@ load_dotenv()
 
 app = typer.Typer()
 
+
 @app.command()
 def health():
     """

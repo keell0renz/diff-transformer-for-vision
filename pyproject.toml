@@ -1,7 +1,7 @@
 [project]
-name = "pipeline"
-version = "0.0.0"
-description = "Pre-built template for deep learning pipelines."
+name = "diff-transformer-for-vision"
+version = "0.0.1"
+description = "Differential transformer for vision research code."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
