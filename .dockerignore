@@ -1,0 +1,10 @@
+.venv
+.mypy_cache
+.ruff_cache
+uv.lock
+models/*
+!models/.gitkeep
+experiments/*
+!experiments/.gitkeep
+.env
+__pycache__/*

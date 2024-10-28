@@ -1,0 +1,30 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# MyPy cache
+.mypy_cache/
+
+# Venv
+.venv/
+
+# Environment variables
+.env
+
+# Lockfile
+uv.lock
+
+# Ignore files inside the checkpoints directory
+checkpoints/*
+
+# Allow the directory to exist in the repository
+!checkpoints/.gitkeep
+
+# Jupyter notebooks (experiments, etc)
+experiments/*
+
+# Allow the directory to exist in the repository
+!experiments/.gitkeep
+
+# Ruff cache
+.ruff_cache/
