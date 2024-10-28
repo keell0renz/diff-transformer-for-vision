@@ -1,7 +1,7 @@
 [project]
 name = "diff-transformer-for-vision"
 version = "0.0.1"
-description = "Differential transformer for vision research code."
+description = "Differential transformer for vision classification research code."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
