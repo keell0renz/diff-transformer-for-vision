@@ -10,15 +10,15 @@ def get_local_directory_tree(path: str) -> Dict[str, str]:
     tree = {}
     for dirpath, _, filenames in os.walk(path):
         # Skip .cache directories and hidden directories
-        if any(part.startswith('.') for part in dirpath.split(os.sep)):
+        if any(part.startswith(".") for part in dirpath.split(os.sep)):
             continue
-            
+
         relative_path = os.path.relpath(dirpath, path)
         for filename in filenames:
             # Skip hidden files
-            if filename.startswith('.'):
+            if filename.startswith("."):
                 continue
-                
+
             file_path = os.path.join(relative_path, filename).replace("\\", "/")
             if file_path.startswith("./"):
                 file_path = file_path[2:]
@@ -26,16 +26,20 @@ def get_local_directory_tree(path: str) -> Dict[str, str]:
     return tree
 
 
-def get_hf_subdirectory_tree(repo_id: str, hf_token: str, subdir: str) -> Dict[str, str]:
+def get_hf_subdirectory_tree(
+    repo_id: str, hf_token: str, subdir: str
+) -> Dict[str, str]:
     api = HfApi()
     files = api.list_repo_files(repo_id, token=hf_token)
 
     subdir_files = {}
     for file_path in files:
         # Skip .cache directories and hidden files/directories
-        if '.cache' in file_path or any(part.startswith('.') for part in file_path.split('/')):
+        if ".cache" in file_path or any(
+            part.startswith(".") for part in file_path.split("/")
+        ):
             continue
-            
+
         if file_path.startswith(subdir):
             relative_path = os.path.relpath(file_path, subdir).replace("\\", "/")
             if relative_path.startswith("./"):
@@ -65,7 +69,9 @@ def upload_missing_files(local_dir: str, hf_subdir: str) -> None:
     api = HfApi()
     for relative_path, full_path in missing_files.items():
         target_path = os.path.join(hf_subdir, relative_path).replace("\\", "/")
-        print(f"[bold blue]Uploading {full_path} to {target_path} in HF repository[/bold blue]")
+        print(
+            f"[bold blue]Uploading {full_path} to {target_path} in HF repository[/bold blue]"
+        )
         api.upload_file(
             path_or_fileobj=full_path,
             path_in_repo=target_path,
@@ -108,12 +114,14 @@ def download_missing_files(local_dir: str, hf_subdir: str) -> None:
         # Remove the hf_subdir prefix from the HF path to avoid recursive directories
         target_local_path = os.path.join(local_dir, relative_path)
         target_local_dir = os.path.dirname(target_local_path)
-        
+
         # Skip if file already exists
         if os.path.exists(target_local_path):
-            print(f"[bold yellow]Skipping {relative_path} - already exists[/bold yellow]")
+            print(
+                f"[bold yellow]Skipping {relative_path} - already exists[/bold yellow]"
+            )
             continue
-            
+
         os.makedirs(target_local_dir, exist_ok=True)
         print(f"[bold blue]Downloading {hf_path} to {target_local_dir}[/bold blue]")
 
@@ -129,3 +137,34 @@ def download_missing_files(local_dir: str, hf_subdir: str) -> None:
             shutil.move(downloaded_file, target_local_path)
 
     print("[bold green]Download complete.[/bold green]")
+
+
+def upload_file_to_hf(filename_in: str) -> None:
+    """
+    Upload a file to the Hugging Face repository.
+    """
+
+    if not os.path.isfile(filename_in):
+        raise ValueError(f"{filename_in} is not a valid file.")
+
+    try:
+        repo_id = os.environ["HF_REPOSITORY"]
+    except KeyError:
+        raise ValueError("HF_REPOSITORY environment variable is not set.")
+
+    api = HfApi()
+
+    # Get the directory of the input file and remove leading './' if present
+    directory_out = os.path.dirname(filename_in).lstrip("./")
+    filename_out = os.path.join(directory_out, os.path.basename(filename_in))
+
+    api.upload_file(
+        path_or_fileobj=filename_in,
+        path_in_repo=filename_out,
+        commit_message=f"Added {os.path.basename(filename_in)} file.",
+        repo_id=repo_id,
+    )
+
+    print(
+        f"[bold green]Uploaded {filename_in} to {filename_out} in the repository.[/bold green]"
+    )
