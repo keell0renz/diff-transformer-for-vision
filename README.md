@@ -34,7 +34,7 @@ Hyperparameters are equal among the models.
 | Hardware          | 4x NVIDIA RTX4090     |
 | Training Images   | 100k                  |
 | Validation Images | 10k                   |
-| Epochs            | 50                    |
+| Epochs            | 100                   |
 | Batch Size        | 1024                  |
 | Warmup Steps      | 500                   |
 | Optimiser         | AdamW                 |
