@@ -10,7 +10,7 @@ from torch.utils.data.dataloader import default_collate
 from utils.model import save_model_to_safetensors
 from utils.general import get_train_logger
 from training.dataset import TinyImageNet
-from models.config import models
+from training.config import models
 
 from typing import Literal
 from rich import print

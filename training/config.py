@@ -1,5 +1,5 @@
-from .differential import DifferentialViT
-from .classic import ClassicViT
+from training.differential import DifferentialViT
+from training.classic import ClassicViT
 from typing import Any
 
 models: dict[str, Any] = {
