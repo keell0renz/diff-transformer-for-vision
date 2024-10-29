@@ -4,9 +4,9 @@ This research explores the novel [Differential Transformer](https://arxiv.org/ab
 
 ## Methodology
 
-We train 12 models in total, of sizes 10, 20, 30 million parameters. 6 models are trained on classic [Tiny ImageNet](https://huggingface.co/datasets/zh-plus/tiny-imagenet), while other 6 are trained on noised version of it. 6 models consist of 2 types of models: classic ViTs and ViT's based on [Differential Transformer](https://arxiv.org/abs/2410.05258) architecture, of different sizes.
+We train 6 models in total, of sizes 10, 20, 30 million parameters. These models are trained on classic [Tiny ImageNet](https://huggingface.co/datasets/zh-plus/tiny-imagenet). The 6 models consist of 2 types of models: classic ViTs and ViT's based on [Differential Transformer](https://arxiv.org/abs/2410.05258) architecture, of different sizes.
 
-Later we compare their training and validation loss curves, along with test accuracy, and compare them by size / arhitecture / dataset and draw conclusions about performance of _Differential Vision Transformer_.
+Later we compare their training and validation loss curves, and compare them by size and architecture and draw conclusions about performance of _Differential Vision Transformer_.
 
 ## Models
 
@@ -18,12 +18,12 @@ Later we compare their training and validation loss curves, along with test accu
 | Differential Transformer ViT| Tiny ImageNet          | 10M  |
 | Differential Transformer ViT| Tiny ImageNet          | 20M  |
 | Differential Transformer ViT| Tiny ImageNet          | 30M  |
-| Classic ViT                 | Noised Tiny ImageNet   | 10M  |
+<!-- | Classic ViT                 | Noised Tiny ImageNet   | 10M  |
 | Classic ViT                 | Noised Tiny ImageNet   | 20M  |
 | Classic ViT                 | Noised Tiny ImageNet   | 30M  |
 | Differential Transformer ViT| Noised Tiny ImageNet   | 10M  |
 | Differential Transformer ViT| Noised Tiny ImageNet   | 20M  |
-| Differential Transformer ViT| Noised Tiny ImageNet   | 30M  |
+| Differential Transformer ViT| Noised Tiny ImageNet   | 30M  | -->
 
 ## Training Hyperparameters
 
