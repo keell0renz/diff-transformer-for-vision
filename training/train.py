@@ -23,7 +23,7 @@ def train(
     size: Literal["10M", "20M", "30M"],
     batch_size: int = 1024,
     workers: int = 4,
-    lr: float = 1e-3,
+    lr: float = 1e-4,
     weight_decay: float = 1e-2,
     epochs: int = 100,
 ):
