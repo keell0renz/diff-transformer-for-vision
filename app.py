@@ -44,7 +44,10 @@ def model_summary(
     model: str = Option(..., help="The model to summarize."),
     size: str = Option(..., help="The size of the model to summarize."),
 ):
-    summary(models[model][size].cuda(), (3, 64, 64), device="cuda")
+    try:
+        summary(models[model][size].cuda(), (3, 64, 64), device="cuda")
+    except (RuntimeError, AssertionError) as e:
+        print(e)
 
 
 if __name__ == "__main__":

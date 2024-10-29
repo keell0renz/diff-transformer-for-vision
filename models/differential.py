@@ -3,80 +3,84 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Assuming RoPE is implemented in a separate module
-from ._rotary import apply_rotary_emb  # RoPE function
-
-
 
 def lambda_init_fn(depth):
     return 0.8 - 0.6 * math.exp(-0.3 * depth)
 
 
-class DifferentialAttention(nn.Module):
-    def __init__(self, embed_dim, num_heads, head_dim, depth, lambda_init):
-        super(DifferentialAttention, self).__init__()
+class DifferentialMultiHeadAttention(nn.Module):
+    def __init__(self, embed_dim, depth, num_heads):
+        super().__init__()
+        self.embed_dim = embed_dim
+        # num_heads set to half of Transformer's #heads
         self.num_heads = num_heads
-        self.head_dim = head_dim
-        self.n_rep = num_heads // 2  # Splitting heads for differential attention
 
-        # Linear projections for Q, K, V
+        self.head_dim = embed_dim // num_heads // 2
+        self.scaling = self.head_dim**-0.5
+
         self.q_proj = nn.Linear(embed_dim, embed_dim, bias=False)
-        self.k_proj = nn.Linear(embed_dim, embed_dim // self.n_rep, bias=False)
-        self.v_proj = nn.Linear(embed_dim, embed_dim // self.n_rep, bias=False)
+        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=False)
+        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=False)
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=False)
 
-        # Lambda parameters for differential attention
-        self.lambda_init = lambda_init
-        self.lambda_q1 = nn.Parameter(torch.randn(head_dim) * 0.1)
-        self.lambda_k1 = nn.Parameter(torch.randn(head_dim) * 0.1)
-        self.lambda_q2 = nn.Parameter(torch.randn(head_dim) * 0.1)
-        self.lambda_k2 = nn.Parameter(torch.randn(head_dim) * 0.1)
-
-        # RMSNorm as sublayer normalization
-        self.subnorm = nn.RMSNorm(2 * head_dim, eps=1e-5, elementwise_affine=True)
-
-    def forward(self, x, cos, sin):
-        batch_size, seq_len, embed_dim = x.shape
-
-        # Compute Q, K, V projections
-        q = self.q_proj(x).view(batch_size, seq_len, 2 * self.num_heads, self.head_dim)
-        k = self.k_proj(x).view(
-            batch_size, seq_len, 2 * (self.num_heads // self.n_rep), self.head_dim
+        self.lambda_init = lambda_init_fn(depth)
+        self.lambda_q1 = nn.Parameter(
+            torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1)
         )
-        v = self.v_proj(x).view(
-            batch_size, seq_len, self.num_heads // self.n_rep, 2 * self.head_dim
+        self.lambda_k1 = nn.Parameter(
+            torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1)
+        )
+        self.lambda_q2 = nn.Parameter(
+            torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1)
+        )
+        self.lambda_k2 = nn.Parameter(
+            torch.zeros(self.head_dim, dtype=torch.float32).normal_(mean=0, std=0.1)
         )
 
-        # Apply RoPE inside attention on q and k using provided cos and sin
-        q = apply_rotary_emb(q, cos, sin, interleaved=True)
-        k = apply_rotary_emb(k, cos, sin, interleaved=True)
+        self.subln = nn.RMSNorm(2 * self.head_dim, eps=1e-5, elementwise_affine=True)
 
-        # Differential attention maps
-        q = q.transpose(1, 2) # type: ignore
-        k = k.transpose(1, 2).repeat(1, self.n_rep, 1, 1)  # type: ignore
-        v = v.transpose(1, 2).repeat(1, self.n_rep, 1, 1)
+    def forward(self, x):
+        bsz, tgt_len, embed_dim = x.size()
+        src_len = tgt_len
 
-        attn_weights = torch.matmul(q * self.head_dim**-0.5, k.transpose(-1, -2))
+        q = self.q_proj(x)
+        k = self.k_proj(x)
+        v = self.v_proj(x)
 
-        # Skipping mask because it is ViT lmao
+        q = q.view(bsz, tgt_len, 2 * self.num_heads, self.head_dim)
+        k = k.view(bsz, src_len, 2 * self.num_heads, self.head_dim)
+        v = v.view(bsz, src_len, self.num_heads, self.head_dim * 2)
 
-        # Compute differential attention weights
-        attn_weights = F.softmax(attn_weights, dim=-1)
-        lambda_1 = torch.exp(torch.sum(self.lambda_q1 * self.lambda_k1, dim=-1))
-        lambda_2 = torch.exp(torch.sum(self.lambda_q2 * self.lambda_k2, dim=-1))
+        q = q.transpose(1, 2)  # type: ignore
+        k = k.transpose(1, 2)  # type: ignore
+        v = v.transpose(1, 2)
+        q *= self.scaling
+        attn_weights = torch.matmul(q, k.transpose(-1, -2))
+
+        attn_weights = torch.nan_to_num(attn_weights)
+        attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).type_as(
+            attn_weights
+        )
+
+        lambda_1 = torch.exp(
+            torch.sum(self.lambda_q1 * self.lambda_k1, dim=-1).float()
+        ).type_as(q)
+        lambda_2 = torch.exp(
+            torch.sum(self.lambda_q2 * self.lambda_k2, dim=-1).float()
+        ).type_as(q)
         lambda_full = lambda_1 - lambda_2 + self.lambda_init
-
-        attn_weights = attn_weights.view(
-            batch_size, self.num_heads, 2, seq_len, seq_len
-        )
+        attn_weights = attn_weights.view(bsz, self.num_heads, 2, tgt_len, src_len)
         attn_weights = attn_weights[:, :, 0] - lambda_full * attn_weights[:, :, 1]
 
-        # Apply attention
-        attn_output = torch.matmul(attn_weights, v)
-        attn_output = (
-            self.subnorm(attn_output).transpose(1, 2).reshape(batch_size, seq_len, -1)
+        attn = torch.matmul(attn_weights, v)  # here
+        attn = self.subln(attn)
+        attn = attn * (1 - self.lambda_init)
+        attn = attn.transpose(1, 2).reshape(
+            bsz, tgt_len, self.num_heads * 2 * self.head_dim
         )
-        return self.out_proj(attn_output)
+
+        attn = self.out_proj(attn)
+        return attn
 
 
 class SwiGLU(nn.Module):
@@ -95,22 +99,34 @@ class SwiGLU(nn.Module):
 
 
 class DifferentialEncoderBlock(nn.Module):
-    def __init__(self, embed_dim, num_heads, mlp_dim, depth, dropout=0.1):
+    def __init__(
+        self,
+        embed_dim,
+        num_heads,
+        mlp_dim,
+        depth,
+        dropout=0.1,
+    ):
         super(DifferentialEncoderBlock, self).__init__()
         self.norm1 = nn.RMSNorm(embed_dim)
-        self.attn = DifferentialAttention(
-            embed_dim,
-            num_heads,
-            embed_dim // num_heads,
-            depth,
-            lambda_init_fn(depth)
-        )
+        self.attn = DifferentialMultiHeadAttention(embed_dim, depth, num_heads)
         self.norm2 = nn.RMSNorm(embed_dim)
-        self.mlp = SwiGLU(embed_dim, int(8/3 * embed_dim), dropout)
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_dim, embed_dim),
+            nn.Dropout(dropout),
+        )
 
-    def forward(self, x, cos, sin):
-        y = x + self.attn(self.norm1(x), cos, sin)
-        x = y + self.mlp(self.norm2(y))
+    def forward(self, x):  # Not fixed
+        x2 = self.norm1(x)
+        attn_output, _ = self.attn(x2)
+        x = x + attn_output
+
+        x2 = self.norm2(x)
+        x = x + self.mlp(x2)
+
         return x
 
 
@@ -150,16 +166,22 @@ class DifferentialViT(nn.Module):
         self.patch_embed = PatchEmbedding(patch_size, in_channels, embed_dim)
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
+        num_patches = (img_size // patch_size) ** 2
+        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, embed_dim))
+
         self.dropout = nn.Dropout(dropout)
-        self.layers = nn.ModuleList([
-            DifferentialEncoderBlock(
-                embed_dim, 
-                num_heads, 
-                mlp_dim, 
-                d, 
-                dropout
-            ) for d in range(depth)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                DifferentialEncoderBlock(
+                    embed_dim,
+                    num_heads,
+                    mlp_dim,
+                    d,
+                    dropout,
+                )
+                for d in range(depth)
+            ]
+        )
 
         self.norm = nn.RMSNorm(embed_dim)
         self.head = nn.Linear(embed_dim, num_classes)
@@ -176,40 +198,11 @@ class DifferentialViT(nn.Module):
         cls_tokens = self.cls_token.expand(batch_size, -1, -1)
         x = torch.cat((cls_tokens, x), dim=1)
 
-        seq_len += 1
-
+        x = x + self.pos_embedding
         x = self.dropout(x)
 
-        # Generate cos and sin tensors for RoPE
-        rotary_dim = embed_dim // 2
-        cos, sin = self.get_rotary_embedding(seq_len, rotary_dim)
-
         for layer in self.layers:
-            x = layer(x, cos, sin)
+            x = layer(x)
 
         x = self.norm(x)
         return self.head(x[:, 0])
-
-    def get_rotary_embedding(self, seq_len, rotary_dim):
-        # Define frequencies (logarithmically spaced)
-        # Frequencies are inversely proportional to the dimensions to encode longer distances
-        inv_freq = 1.0 / (10000 ** (torch.arange(0, rotary_dim, 2).float() / rotary_dim))
-
-        # Calculate angles based on position and frequencies
-        positions = torch.arange(seq_len).unsqueeze(1)
-        angles = positions * inv_freq.unsqueeze(0)  # Shape: (seq_len, rotary_dim // 2)
-
-        # Compute cosine and sine embeddings
-        cos = torch.cos(angles)  # Shape: (seq_len, rotary_dim // 2)
-        sin = torch.sin(angles)  # Shape: (seq_len, rotary_dim // 2)
-
-        # Interleave cos and sin to match the rotary dimensions
-        cos = cos.repeat_interleave(2, dim=1)  # Shape: (seq_len, rotary_dim)
-        sin = sin.repeat_interleave(2, dim=1)  # Shape: (seq_len, rotary_dim)
-
-        # Move cos and sin to the same device as the model parameters
-        device = next(self.parameters()).device
-        cos = cos.to(device)
-        sin = sin.to(device)
-
-        return cos, sin
