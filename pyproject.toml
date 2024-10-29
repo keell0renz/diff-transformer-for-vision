@@ -17,6 +17,7 @@ dependencies = [
     "torchvision>=0.20.0",
     "tqdm>=4.66.5",
     "typer>=0.12.5",
+    "wandb>=0.18.5",
 ]
 
 [tool.uv]

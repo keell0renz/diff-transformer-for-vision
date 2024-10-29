@@ -40,7 +40,7 @@ def gpu_check() -> bool:
 def env_check() -> bool:
     issues = False
 
-    env_vars = ["HF_REPOSITORY", "HF_TOKEN"]
+    env_vars = ["HF_REPOSITORY", "HF_TOKEN", "WANDB_API_KEY"]
     env_table = Table("Environment Variable", "Value", show_header=False)
 
     for var in env_vars:
