@@ -106,11 +106,11 @@ class DifferentialEncoderBlock(nn.Module):
             lambda_init_fn(depth)
         )
         self.norm2 = nn.RMSNorm(embed_dim)
-        self.mlp = SwiGLU(embed_dim, mlp_dim, dropout)
+        self.mlp = SwiGLU(embed_dim, int(8/3 * embed_dim), dropout)
 
     def forward(self, x, cos, sin):
-        x = x + self.attn(self.norm1(x), cos, sin)
-        x = x + self.mlp(self.norm2(x))
+        y = x + self.attn(self.norm1(x), cos, sin)
+        x = y + self.mlp(self.norm2(y))
         return x
 
 
