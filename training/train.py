@@ -14,6 +14,7 @@ from models.config import models
 from typing import Literal
 from rich import print
 from tqdm import tqdm
+import wandb
 
 
 def train(
@@ -27,6 +28,18 @@ def train(
     epochs: int = 100,
 ):
     logger = get_train_logger(run_id)
+
+    config = {
+        "model_type": model_type,
+        "size": size,
+        "batch_size": batch_size,
+        "workers": workers,
+        "lr": lr,
+        "weight_decay": weight_decay,
+        "epochs": epochs,
+    }
+
+    wandb.init(project=run_id, config=config)
 
     dist.init_process_group(backend="nccl")
     rank = dist.get_rank()
@@ -107,6 +120,14 @@ def train(
             )
             print(
                 f"Epoch [bold green]{epoch + 1}/{epochs}[/bold green], Training Loss: [bold green]{train_loss:.4f}[/bold green], Validation Loss: [bold green]{val_loss_avg:.4f}[/bold green], Validation Accuracy: [bold green]{val_acc:.2f}%[/bold green]"
+            )
+
+            wandb.log(
+                {
+                    "train_loss": train_loss,
+                    "val_loss": val_loss_avg,
+                    "val_acc": val_acc,
+                }
             )
 
     if rank == 0:
