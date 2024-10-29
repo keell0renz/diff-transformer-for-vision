@@ -1,9 +1,7 @@
 from torch.utils.data import Dataset
-from torch.nn.functional import one_hot
 from torchvision import transforms
 from datasets import load_dataset
 from typing import Literal
-import torch
 
 
 class TinyImageNet(Dataset):
@@ -30,6 +28,5 @@ class TinyImageNet(Dataset):
             image = image.convert("RGB")  # type: ignore
 
         image = self.transform(image)
-        label_one_hot = one_hot(torch.tensor(label), num_classes=self.num_classes).float()
 
-        return image, label_one_hot
+        return image, label
