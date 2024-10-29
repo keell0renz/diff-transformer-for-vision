@@ -121,7 +121,7 @@ class DifferentialEncoderBlock(nn.Module):
 
     def forward(self, x):  # Not fixed
         x2 = self.norm1(x)
-        attn_output, _ = self.attn(x2)
+        attn_output = self.attn(x2)
         x = x + attn_output
 
         x2 = self.norm2(x)
