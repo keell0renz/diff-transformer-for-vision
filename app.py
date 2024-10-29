@@ -58,7 +58,7 @@ def train_model(
     model_type: str = Option(..., help="The type of model to train. (e.g. 'differential', 'classic')"),
     size: str = Option(..., help="The size of the model to train. (e.g. '10M', '20M', '30M')"),
     batch_size: int = Option(1024, help="The batch size for training."),
-    workers: int = Option(4, help="The number of workers for data loading."),
+    workers: int = Option(4, help="The number of workers for training."),
     lr: float = Option(1e-4, help="The learning rate for training."),
     weight_decay: float = Option(1e-2, help="The weight decay for the optimizer."),
     epochs: int = Option(100, help="The number of epochs for training."),
@@ -76,4 +76,8 @@ def train_model(
 
 
 if __name__ == "__main__":
-    app()
+    try:
+        app()
+    except Exception as e:
+        print(e)
+        typer.Exit(code=1)

@@ -5,6 +5,7 @@ import torch.distributed as dist
 import torch.optim as optim
 import torch.nn as nn
 import torch
+from torch.utils.data.dataloader import default_collate
 
 from utils.model import save_model_to_safetensors
 from utils.general import get_train_logger
@@ -16,6 +17,13 @@ from rich import print
 from tqdm import tqdm
 import wandb
 
+
+def custom_collate(batch):
+    try:
+        result = default_collate(batch)
+        return result
+    except Exception:
+        raise
 
 def train(
     run_id: str,
@@ -46,19 +54,24 @@ def train(
     torch.cuda.set_device(rank)
 
     train_dataset = TinyImageNet(repo="zh-plus/tiny-imagenet", split="train")
-    val_dataset = TinyImageNet(repo="zh-plus/tiny-imagenet", split="val")
+    val_dataset = TinyImageNet(repo="zh-plus/tiny-imagenet", split="valid")
 
     train_sampler = DistributedSampler(
         train_dataset, num_replicas=dist.get_world_size(), rank=rank
     )
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, sampler=train_sampler, num_workers=workers
-    )
+        train_dataset, 
+        batch_size=2,  # Small batch size for debugging
+        sampler=train_sampler, 
+        num_workers=1,  # Single worker
+            collate_fn=custom_collate
+        )
     val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False, num_workers=workers
+        val_dataset, batch_size=batch_size, shuffle=False, num_workers=workers, collate_fn=custom_collate
     )
 
     model = models[model_type][size]
+    model.cuda()
 
     model = DDP(model, device_ids=[rank])
 

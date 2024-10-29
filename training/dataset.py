@@ -7,12 +7,12 @@ import torch
 
 
 class TinyImageNet(Dataset):
-    def __init__(self, repo: str, split: Literal["train", "val"]):
+    def __init__(self, repo: str, split: Literal["train", "valid"]):
         self.dataset = load_dataset(repo, split=split)
         self.transform = transforms.Compose(
             [
-                transforms.Resize((64, 64)),
                 transforms.ToTensor(),
+                transforms.Resize((64, 64)),
                 transforms.Normalize((0.5,), (0.5,)),
             ]
         )
@@ -24,9 +24,12 @@ class TinyImageNet(Dataset):
     def __getitem__(self, idx):
         sample = self.dataset[idx]  # type: ignore
         image, label = sample["image"], sample["label"]
+        
+        # Convert grayscale to RGB if needed
+        if image.mode != 'RGB': # type: ignore
+            image = image.convert("RGB")  # type: ignore
 
         image = self.transform(image)
-
-        label_one_hot = one_hot(torch.tensor(label), num_classes=self.num_classes)
+        label_one_hot = one_hot(torch.tensor(label), num_classes=self.num_classes).float()
 
         return image, label_one_hot
