@@ -47,7 +47,7 @@ def train(
         "epochs": epochs,
     }
 
-    wandb.init(project=run_id, config=config)
+    wandb.init(project="diff-transformer-for-vision", name=run_id, id=run_id, config=config)
 
     dist.init_process_group(backend="nccl")
     rank = dist.get_rank()

@@ -28,3 +28,5 @@ experiments/*
 
 # Ruff cache
 .ruff_cache/
+
+.wandb/
