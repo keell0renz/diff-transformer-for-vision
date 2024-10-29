@@ -25,6 +25,7 @@ def custom_collate(batch):
     except Exception:
         raise
 
+
 def train(
     run_id: str,
     model_type: Literal["classic", "differential"],
@@ -47,7 +48,9 @@ def train(
         "epochs": epochs,
     }
 
-    wandb.init(project="diff-transformer-for-vision", name=run_id, id=run_id, config=config)
+    wandb.init(
+        project="diff-transformer-for-vision", name=run_id, id=run_id, config=config
+    )
 
     dist.init_process_group(backend="nccl")
     rank = dist.get_rank()
@@ -60,14 +63,18 @@ def train(
         train_dataset, num_replicas=dist.get_world_size(), rank=rank
     )
     train_loader = DataLoader(
-        train_dataset, 
-        batch_size=2,  # Small batch size for debugging
-        sampler=train_sampler, 
-        num_workers=1,  # Single worker
-            collate_fn=custom_collate
-        )
+        train_dataset,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=workers,
+        collate_fn=custom_collate,
+    )
     val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False, num_workers=workers, collate_fn=custom_collate
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=workers,
+        collate_fn=custom_collate,
     )
 
     model = models[model_type][size]
