@@ -82,22 +82,7 @@ class DifferentialMultiHeadAttention(nn.Module):
         attn = self.out_proj(attn)
         return attn
 
-
-class SwiGLU(nn.Module):
-    def __init__(self, embed_dim, hidden_dim, dropout=0.0):
-        super(SwiGLU, self).__init__()
-        self.fc1 = nn.Linear(embed_dim, hidden_dim * 2)
-        self.fc2 = nn.Linear(hidden_dim, embed_dim)
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x1, x2 = x.chunk(2, dim=-1)
-        x = F.silu(x1) * x2
-        x = self.dropout(x)
-        return self.fc2(x)
-
-
+        
 class DifferentialEncoderBlock(nn.Module):
     def __init__(
         self,
