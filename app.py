@@ -1,6 +1,9 @@
 from utils.hugginface import upload_missing_files, download_missing_files
 from utils.health import health_check
+from models.config import models
+from torchsummary import summary
 from dotenv import load_dotenv
+from typer import Option
 import typer
 
 load_dotenv()
@@ -34,6 +37,14 @@ def download():
     """
 
     download_missing_files(local_dir="checkpoints", hf_subdir="checkpoints")
+
+
+@app.command()
+def model_summary(
+    model: str = Option(..., help="The model to summarize."),
+    size: str = Option(..., help="The size of the model to summarize."),
+):
+    summary(models[model][size].cuda(), (3, 64, 64), device="cuda")
 
 
 if __name__ == "__main__":
