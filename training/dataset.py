@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 from torch.nn.functional import one_hot
 from torchvision import transforms
 from datasets import load_dataset
@@ -30,15 +30,3 @@ class TinyImageNet(Dataset):
         label_one_hot = one_hot(torch.tensor(label), num_classes=self.num_classes)
 
         return image, label_one_hot
-
-
-def get_train_loader(batch_size: int = 1024):
-    train_dataset = TinyImageNet(repo="zh-plus/tiny-imagenet", split="train")
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    return train_loader
-
-
-def get_val_loader(batch_size: int = 1024):
-    val_dataset = TinyImageNet(repo="zh-plus/tiny-imagenet", split="val")
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    return val_loader
