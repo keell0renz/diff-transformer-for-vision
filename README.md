@@ -2,7 +2,7 @@
 
 _UPDATE_: Research did not achieve intended objectives, maybe because inductive bias of diff transformer is not designed for visual data and / or baseline classic transformers are implemented improperly.
 
-_UPDATE 2_2: After talking to Tianzhu Ye, co-author of original paper, I will try to adjust diff vit code to original more, add bias in attention, change RMSNorm to LayerNorm, resize image into 96x96 and use 4x4 patch. Thank you, Mr. Ye!
+_UPDATE 2_: After talking to Tianzhu Ye, co-author of original paper, I will try to adjust diff vit code to original more, add bias in attention, change RMSNorm to LayerNorm, resize image into 96x96 and use 4x4 patch. Thank you, Mr. Ye!
 Models can be found [here](https://huggingface.co/keell0renz/diff-transformer-for-vision/tree/main/checkpoints), only 10M versions.
 
 At least I have learned a lot about methodology and pipeline building and will be better prepared for next projects.
