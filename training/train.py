@@ -153,6 +153,6 @@ def train(
         logger.info("Training completed!")
         print("[bold green]Training completed![/bold green]")
 
-        save_model_to_safetensors(model, "./checkpoints/{run_id}/model.safetensors")
+        save_model_to_safetensors(model, f"./checkpoints/{run_id}/model.safetensors")
 
     dist.destroy_process_group()
