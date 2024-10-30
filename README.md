@@ -35,7 +35,7 @@ Hyperparameters are equal among the models.
 | Training Images   | 100k                  |
 | Validation Images | 10k                   |
 | Epochs            | 50                    |
-| Batch Size        | 1024                  |
+| Batch Size        | 512                   |
 | Warmup Steps      | 500                   |
 | Optimiser         | AdamW                 |
 | Learning Rate     | 1e-4, cosine annealing|
