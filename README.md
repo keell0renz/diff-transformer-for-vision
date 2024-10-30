@@ -1,5 +1,11 @@
 # Differential Transformer for Vision Classification
 
+_UPDATE_: Research did not achieve intended objectives, maybe because inductive bias of diff transformer is not designed for visual data and / or baseline classic transformers are implemented improperly.
+
+Models can be found [here](https://huggingface.co/keell0renz/diff-transformer-for-vision/tree/main/checkpoints), only 10M versions.
+
+At least I have learned a lot about methodology and pipeline building and will be better prepared for next projects.
+
 This research explores the novel [Differential Transformer](https://arxiv.org/abs/2410.05258) architecture for supervised image classification tasks and measures its performance compared to traditional ViT architecture.
 
 ## Methodology
@@ -35,7 +41,7 @@ Hyperparameters are equal among the models.
 | Training Images   | 100k                  |
 | Validation Images | 10k                   |
 | Epochs            | 50                    |
-| Batch Size        | 512                   |
+| Batch Size        | 512 (10M), 256 (30M)  |
 | Warmup Steps      | 500                   |
 | Optimiser         | AdamW                 |
 | Learning Rate     | 1e-4, cosine annealing|
